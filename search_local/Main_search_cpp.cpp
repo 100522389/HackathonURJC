@@ -64,6 +64,18 @@ int main(int argc, char* argv[]) {
         }
     }
     std::cout << "\n";
+
+    // Imprimir posiciones
+    std::cout << "\nPosiciones:\n";
+    for (size_t i = 0; i < bi_result.path.size(); ++i) {
+        auto [lon, lat] = graph.getC(bi_result.path[i]);
+        std::cout << lat << " " << lon;
+        if (i < bi_result.path.size() - 1) {
+            std::cout << "\n";
+        }
+    }
+    std::cout << "\n";
+
     auto end_time = std::chrono::high_resolution_clock::now();
     auto total_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
     std::cout << "\nTiempo total de ejecución: " << total_duration.count() << " ms\n";
