@@ -78,3 +78,9 @@ temp/
 .coverage
 htmlcov/
 coverage.xml
+
+.co
+.gr
+
+# DIMAC road graph data
+search_local/DIMAC/
