@@ -83,3 +83,6 @@ coverage.xml
 
 # DIMAC road graph data
 search_local/DIMAC/
+# Binarios grandes del grafo
+*.bin
+*.exe
