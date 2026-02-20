@@ -1,5 +1,7 @@
 #include "graph.hpp"
 #include <thread>
+#include <fstream>
+#include <string>
 
 // Constructor por defecto
 Graph::Graph() : n_(0) {}
@@ -90,4 +92,69 @@ std::pair<double, double> Graph::getC(int u) const {
         return points_[u];
     }
     return {0.0, 0.0};
+}
+
+// ─── Serialización binaria ───────────────────────────────────────────────────
+
+// Guarda el grafo completo (forward + reverse + coordenadas) en formato binario
+void Graph::SaveBinary(const std::string& path) const {
+    std::ofstream f(path, std::ios::binary);
+    // Número de nodos
+    f.write(reinterpret_cast<const char*>(&n_), sizeof(n_));
+    // Listas de adyacencia forward
+    for (int u = 0; u <= n_; ++u) {
+        int sz = static_cast<int>(adj_[u].size());
+        f.write(reinterpret_cast<const char*>(&sz), sizeof(sz));
+        if (sz > 0)
+            f.write(reinterpret_cast<const char*>(adj_[u].data()), sz * sizeof(Edge));
+    }
+    // Listas de adyacencia reverse
+    bool has_reverse = !adj_reverse_.empty();
+    f.write(reinterpret_cast<const char*>(&has_reverse), sizeof(has_reverse));
+    if (has_reverse) {
+        for (int u = 0; u <= n_; ++u) {
+            int sz = static_cast<int>(adj_reverse_[u].size());
+            f.write(reinterpret_cast<const char*>(&sz), sizeof(sz));
+            if (sz > 0)
+                f.write(reinterpret_cast<const char*>(adj_reverse_[u].data()), sz * sizeof(Edge));
+        }
+    }
+    // Coordenadas
+    f.write(reinterpret_cast<const char*>(points_.data()), points_.size() * sizeof(std::pair<double, double>));
+}
+
+// Carga el grafo completo desde formato binario; devuelve false si falla
+bool Graph::LoadBinary(const std::string& path) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return false;
+    // Número de nodos
+    f.read(reinterpret_cast<char*>(&n_), sizeof(n_));
+    // Listas de adyacencia forward
+    adj_.assign(n_ + 1, {});
+    for (int u = 0; u <= n_; ++u) {
+        int sz = 0;
+        f.read(reinterpret_cast<char*>(&sz), sizeof(sz));
+        if (sz > 0) {
+            adj_[u].resize(sz);
+            f.read(reinterpret_cast<char*>(adj_[u].data()), sz * sizeof(Edge));
+        }
+    }
+    // Listas de adyacencia reverse
+    bool has_reverse = false;
+    f.read(reinterpret_cast<char*>(&has_reverse), sizeof(has_reverse));
+    if (has_reverse) {
+        adj_reverse_.assign(n_ + 1, {});
+        for (int u = 0; u <= n_; ++u) {
+            int sz = 0;
+            f.read(reinterpret_cast<char*>(&sz), sizeof(sz));
+            if (sz > 0) {
+                adj_reverse_[u].resize(sz);
+                f.read(reinterpret_cast<char*>(adj_reverse_[u].data()), sz * sizeof(Edge));
+            }
+        }
+    }
+    // Coordenadas
+    points_.resize(n_ + 1);
+    f.read(reinterpret_cast<char*>(points_.data()), (n_ + 1) * sizeof(std::pair<double, double>));
+    return f.good() || f.eof();
 }

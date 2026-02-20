@@ -1,9 +1,7 @@
 ﻿#include <iostream>
-#include <fstream>
 #include <string>
 #include <chrono>
 #include "Compile/graph.hpp"
-#include "Compile/loader.hpp"
 #include "Compile/algorithm.hpp"
 
 int main(int argc, char* argv[]) {
@@ -15,18 +13,17 @@ int main(int argc, char* argv[]) {
     // Parámetros fijos para el servicio
     int source = std::stoi(argv[1]);
     int target = std::stoi(argv[2]);
-    const std::string basename = "DIMAC/USA-road-d.USA";
+    const std::string bin_path = "DIMAC/USA-road-d.USA.bin";
     const Algorithm::HeuristicType heuristic = Algorithm::HeuristicType::EUCLIDEAN;
-    // Cargar el grafo desde los archivos DIMAC
-    std::cout << "Cargando grafo desde: " << basename << "\n";
+    // Cargar el grafo desde el binario precomputado
+    std::cout << "Cargando grafo desde binario: " << bin_path << "\n";
     Graph graph;
-    auto load_stats = Loader::DIMACS(basename, graph);
+    if (!graph.LoadBinary(bin_path)) {
+        std::cerr << "Error: no se pudo abrir " << bin_path << "\n";
+        std::cerr << "Ejecuta primero: graph_loader.exe DIMAC/USA-road-d.USA DIMAC/USA-road-d.USA.bin\n";
+        return 1;
+    }
     std::cout << "Grafo cargado con " << graph.size() << " nodos\n";
-    std::cout << "Arcos procesados: " << load_stats.edges_processed << "\n";
-    // Construir el grafo inverso para A* bidirectional
-    std::cout << "Construyendo grafo inverso...\n";
-    graph.BuildReverseGraph();
-    std::cout << "Grafo inverso construido\n\n";
     // Ejecutar A* Bidireccional con heurística euclídea
     std::cout << "Ejecutando A* Bidirectional (heurística euclídea)\n";
     std::cout << "Desde nodo " << source << " hasta nodo " << target << "...\n";

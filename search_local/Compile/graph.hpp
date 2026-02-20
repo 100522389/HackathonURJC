@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <utility>
+#include <string>
 
 // Clase que representa un grafo dirigido
 class Graph {
@@ -36,6 +37,10 @@ public:
     
     // Obtiene latitud y longitud
     std::pair<double, double> getC(int u) const;
+
+    // Serialización binaria
+    void SaveBinary(const std::string& path) const;
+    bool LoadBinary(const std::string& path);
 
 private:
     int n_;                                            // Número de nodos

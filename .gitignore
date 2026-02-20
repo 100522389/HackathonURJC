@@ -36,7 +36,6 @@ site-packages/
 *.pt
 *.pth
 *.onnx
-*.bin
 *.safetensors
 models/
 checkpoints/
