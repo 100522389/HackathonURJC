@@ -28,9 +28,8 @@ site-packages/
 .ipynb_checkpoints/
 *.ipynb
 
-# ML / modelos
+# ML
 *.pkl
-*.joblib
 *.h5
 *.hdf5
 *.pt
