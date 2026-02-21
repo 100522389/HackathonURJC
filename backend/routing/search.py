@@ -7,7 +7,7 @@ import os
 import numpy as np
 from scipy.spatial import cKDTree as cKDTree22
 
-router = APIRouter()
+router1 = APIRouter()
 
 GRAPH_SEARCH_BIN = os.path.join(os.path.dirname(__file__), "..", "..", "search_local", "graph_search")
 CO_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "search_local", "DIMAC", "USA-road-d.USA.co")
@@ -46,10 +46,10 @@ def _nearest_node(lat: float, lon: float) -> int:
     return int(_node_ids[idx])
 
 
-def load_kdtree():
-    """Carga el KD-Tree con las coordenadas del grafo."""
+def load_kdt():
+    """Carga el KD-Tree con las posiciones respecto al grafo."""
     global _kdt, _node_ids
-    print("Cargando coordenadas del grafo desde el archivo .co...")
+    print("Cargando (lat, lon) desde el archivo .co...")
     node_ids = []
     lats = []
     lons = []
@@ -67,11 +67,11 @@ def load_kdtree():
     print(f"KD-tree construido con {len(node_ids):,} nodos.")
 
 
-@router.get("", response_model=SearchResponse)
+@router1.get("", response_model=SearchResponse)
 def search_path(source_lat: float, source_lon: float, target_lat: float, target_lon: float):
     """
     Encuentra el camino óptimo entre 2 puntos geográficos en el grafo USA-road DIMACS.
-    Recibe posición (lat, lon) y resuelve internamente los nodos más cercanos.
+    Recibe posición (lat, lon) y resuelve internamente los nodos más cercanos...
     Usa A* Bidirectional con la distancia euclídea como heurística.
     
     Args:
@@ -135,7 +135,9 @@ def search_path(source_lat: float, source_lon: float, target_lat: float, target_
     path: list[int] = []
     m = re.search(r"Camino:\n(.+)", output)
     if m:
-        path = [int(x) for x in re.findall(r"\d+", m.group(1))]
+        # Quitar los costes de arista "(X)" para extraer solo los nodos (Revisar)
+        clean = re.sub(r"\s*-\s*\(\d+\)\s*-\s*", " ", m.group(1))
+        path = [int(x) for x in clean.split()]
 
     if cost is None:
         raise HTTPException(status_code=500, detail=f"No se pudo parsear la salida:\nSTDOUT: {output!r}\nSTDERR: {result.stderr!r}\nRETURNCODE: {result.returncode}")

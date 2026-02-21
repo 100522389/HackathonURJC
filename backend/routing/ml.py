@@ -6,7 +6,6 @@ import subprocess as ss
 import re
 import os
 import numpy as np
-from scipy.spatial import cKDTree as cKDTree22
 
 router = APIRouter()
 

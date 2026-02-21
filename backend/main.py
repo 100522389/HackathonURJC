@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routing import search
+from .routing import search, pl
 
 backend = FastAPI(
-    title="DHL Logistics Optimization API",
-    description="API para optimización logística: routing, programación lineal y predicción de demanda",
+    title="sostenibility Optimization API",
+    description="API para optimización logística: routing, programación lineal y predicción de demanda por zonas densas",
     version="1.0.1",
 )
 
@@ -17,14 +17,14 @@ backend.add_middleware(
 )
 
 # Incluir routers
-backend.include_router(search.router, prefix="/search", tags=["Routing - A* Bidirectional"])
+backend.include_router(search.router1, prefix="/search", tags=["Routing - A* Bidirectional"])
+backend.include_router(pl.router2, prefix="/pl", tags=["Programación Lineal - Multi-Depot VRP"])
 
 
 @backend.on_event("startup")
 async def startup_event():
     print("Starting up the backend server...")
-    # Cargar KD-Tree para búsqueda de nodos
-    search.load_kdtree()
+    search.load_kdt() # (scipy.spatial) para búsqueda de nodos
 
 
 @backend.on_event("shutdown")

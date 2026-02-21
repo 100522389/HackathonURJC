@@ -177,7 +177,6 @@ def build_data(raw: dict) -> dict:
     # ── depots limpios
     depots = [{"id": d["id"]} for d in raw["depots"]]
 
-    # ── clients limpios
     clients = [
         {"id": c["id"], "nS": c["nS"], "nM": c["nM"], "nL": c["nL"]}
         for c in raw["clients"]

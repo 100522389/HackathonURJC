@@ -72,10 +72,10 @@ def _validate_input(data: dict):
 
 # ASIGNACIÓN DE CLIENTES A DEPÓSITOS (Fase 1)
 
-def assign_clients_to_depots(
+def clients_to_depots(
     depots: List[dict],
     clients: List[dict],
-    fleet: Dict[str, Dict[str, int]],
+    flota: Dict[str, Dict[str, int]],
     dist_matrix: Dict[Tuple[str, str], float],
 ) -> Dict[str, List[dict]]:
     """
@@ -86,7 +86,7 @@ def assign_clients_to_depots(
     # Capacidad total por depósito
     depot_cap = {}
     for did in depot_ids:
-        types = fleet.get(did, {})
+        types = flota.get(did, {})
         cap = sum(CAP[vt] * cnt for vt, cnt in types.items())
         depot_cap[did] = cap
 
@@ -317,7 +317,7 @@ def solve_mdvrp(data: dict) -> dict:
     dist_matrix = norm_dist
 
     # ══════════════════ FASE 1: ASIGNAR CLIENTES ══════════════════
-    depot_clients = assign_clients_to_depots(depots, clients, flota, dist_matrix)
+    depot_clients = clients_to_depots(depots, clients, flota, dist_matrix)
 
     # ══════════════════ FASE 2: VRP POR DEPÓSITO ══════════════════
     all_routes: Dict[str, List[str]] = {}
