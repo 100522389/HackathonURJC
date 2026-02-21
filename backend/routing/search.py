@@ -9,8 +9,9 @@ from scipy.spatial import cKDTree as cKDTree22
 
 router1 = APIRouter()
 
-GRAPH_SEARCH_BIN = os.path.join(os.path.dirname(__file__), "..", "..", "search_local", "graph_search")
-CO_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "search_local", "DIMAC", "USA-road-d.USA.co")
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+GRAPH_SEARCH_BIN = os.path.join(_BACKEND_DIR, "graph_search")
+CO_FILE = os.path.join(_BACKEND_DIR, "DIMAC", "USA-road-d.USA.co")
 _USE_WSL = os.name == "nt"  # En Windows el binario es Linux → usar WSL
 
 # El árbol de búsqueda (Global) — se construye una sola vez en el startup
@@ -86,11 +87,11 @@ def search_path(source_lat: float, source_lon: float, target_lat: float, target_
     source = _nearest_node(source_lat, source_lon)
     target = _nearest_node(target_lat, target_lon)
     
-    search_local_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "search_local"))
+    backend_dir = _BACKEND_DIR
     try:
         if _USE_WSL:
             # Convertir ruta Windows a ruta WSL (/mnt/c/...)
-            wsl_dir = search_local_dir.replace("\\", "/").replace("C:", "/mnt/c").replace("c:", "/mnt/c")
+            wsl_dir = backend_dir.replace("\\", "/").replace("C:", "/mnt/c").replace("c:", "/mnt/c")
             cmd = ["wsl", "-e", "bash", "-c",
                 f"cd '{wsl_dir}' && ./graph_search {source} {target}"]
         else:
@@ -100,7 +101,7 @@ def search_path(source_lat: float, source_lon: float, target_lat: float, target_
             capture_output=True,
             text=True,
             timeout=300,  # 5 minutos de timeout para búsquedas complejas
-            cwd=search_local_dir,
+            cwd=backend_dir,
         )
     except ss.TimeoutExpired:
         raise HTTPException(status_code=504, detail="El algoritmo superó el tiempo límite.")

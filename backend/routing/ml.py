@@ -11,14 +11,14 @@ import h3
 
 router3 = APIRouter()
 
-# Carga del modelo
-_BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "ML")
+# Carga del modelo (Dentro de backend/ML/)
+_BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "ML")
 _model    = joblib.load(os.path.join(_BASE_DIR, "modelo_demanda.joblib"))
 _features = joblib.load(os.path.join(_BASE_DIR, "features.joblib"))
 
 
 # Clase base compartida con validaciones de historial y day semana
-class HistorialDayWeek(BaseModel):
+class HistorialDayWk(BaseModel):
     historial: List[int]
     day_semana: int  # 0 = lunes ... 6 = domingo
 
@@ -38,7 +38,7 @@ class HistorialDayWeek(BaseModel):
 
 
 # Hereda de HistorialDayWeek
-class PredecirZonaRequest(HistorialDayWeek):
+class PredecirZonaRequest(HistorialDayWk):
     pass
 
 
@@ -86,7 +86,7 @@ def predecir_zona(body: PredecirZonaRequest) -> PredecirZonaResponse:
 
 
 # Hereda de HistorialDayWeek y le suma latitud y longitud sumando GPS
-class PredictGpsRequest(HistorialDayWeek):
+class PredictGpsRequest(HistorialDayWk):
     lat: float
     lng: float
 
