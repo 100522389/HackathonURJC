@@ -91,24 +91,60 @@ Instancias disponibles en [9th DIMAC Challenge](http://www.diag.uniroma1.it/chal
 
 ### Servicio 2
 
-**Datos necesarios para el funcionamiento del solver**
--Lista de depositos: tan solo se necesita el Id del deposito. (D1, D2, D3)
+**Funcionamiento del servicio**
+El empresario introduce los siguientes datos mediante un archivo: lista de depósitos, flota de cada depósito y lista de clientes. Inclyendo en los datos las coordenadas de los clientes y de los depósitos.
 
--Flota de cada deposito: "VAN": numero de furgonetas, "TRUCK": numero de camiones.
+Después internamente se calculan las distancias necesarias para construir la matriz de distancias (mediante build_problem), que lee el JSON del usuario, calcula la distancia Haversine entre todos los pares de nodos, multiplica por un factor para aproximar la distancia real por carretera y devuelve la matriz de distancias.
+
+Posteriormente se le pasarían todos los datos al solver para aplicarlo a nuestro modelo de programacion lineal.
+
+
+**COP, funcionamiento del solver**
+El modelo se descompone en dos fases, asignación de clientes a depósitos y para cada depósito con clientes asignados se resuelve un CVRP.
+
+-Fase 1: esta fase es una heuristica greedy que decide que depósito atenderá a cada cliente, esta fase solo se establece "este cliente es parte de este depósito", para ello se recorren todos los clientes uno por uno y asigna cada uno al deposito más cercano que aún tengo capacidad disponible. Se realiza de la siguiente manera:
+
+    -Primero se calcula la capacidad total de cada deposito (según las VAN y TRUCKS) y el volumen del cliente (según sus paquetes).
+
+    -Para cada cliente, ordena los depositos por distancias (de menor a mayor), usando la matriz de distancias precalculada.
+
+    -Se intentan asignar en 3 pasadas(con umbrales de capacidad cada vez más permisivos):
+        Volumen acumulado + volumen del cliente < 80% de la capacidad del depósito.
+        Volumen acumulado + volumen del cliente < 95% de la capacidad del depósito.
+        Sin restricciones de capacidad.
+
+
+-Fase 2: esta fase se ejecuta una vez por cada deposito que tenga clientes asignados.
+    -Preparacion del modelo: se crea un grafo donde Nodo 0(es el deposito) y luego Nodos1...N (son los clientes).
+    -Se expande la flota del depósito, es decir se crean tantos vehículos como tenga el depósito.
+    -Se construye la matriz de distancias, con las distancias entre todos los pares de nodos(cliente-cliente, cliente-deposito)
+
+    **COP**
+    Se trata de un CSP que ademas de asegurarte que la solución es factible tambien te asegura que sea óptima.
+
+    FUNCIÓN OBJETIVO:
+    Minimizar la distancia total recorrida por todos los vehículos, por lo tanto se busca minimizar la suma de la distancia de todos los arcos recorridos por todos los vehículos.
+   
+    RESTRICCIONES:
+    R1: La capacidad de los vehículos no sea excedida.
+    R2: No es obligatorio usar todos los vehículos, para reducir la penalización si no hacen falta todos los vehículos.
+    R3: Cada cliente debe ser etendido exactamente una vez y no se debe dejar ningún cliente sin visitar.
+    R4: Si un vehículo llega a un punto debe de salir de ese punto.
+    R5: Todos los vehículos que salen de un deposito deben volver al mismo deposito.
+
+
+**Datos necesarios para el funcionamiento del solver**
+-Lista de depósitos: tan solo se necesita el Id del depósito. (D1, D2, D3)
+
+-Flota de cada depósito: "VAN": número de furgonetas, "TRUCK": número de camiones.
 
 -Lista de clientes: con su Id, nS: paquetes pequeños, nM: paquetes medianos, nL: paquetes grandes.
 
 -Matriz de distancias:
-    Distancias depositos a deposito: ("D1", "D2"): X
-    Distancia entre deposito a cliente: ("C1", "D1"): X
-    Distancias cliante a cliente: ("C1", "C2"): X
+    Distancias depósitos a depósito: ("D1", "D2"): X
+    Distancia entre depósito a cliente: ("C1", "D1"): X
+    Distancias cliente a cliente: ("C1", "C2"): X
 
-**Funcionamiento del solver**
-El empresario introduce los siguientes datos mediante un archivo: lista de depositos, flota de cada deposito y lista de clientes. Inclyendo en los datos las coordenadas de los clientes y de los depositos.
-
-Despues internamente se calculan las distancias necesarias para construir la matriz de distancias (mediante build_problem), que lee el JSON del usuario, calcula la distancia Haversine entre todos los pares de nodos, multiplica por un factor para aproximar la distancia real por carretera y devuelve la matriz de distancias.
-
-Posteriormente se le pasarian todos los datos al solver para aplicarlo a nuestro modelo de programacion lineal.
 
 ### Servicio 3
 
