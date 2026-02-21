@@ -13,6 +13,7 @@ Se plantea un backend con FastAPI, Uvicorn y Pydantic en Microsoft Azure que ten
 
     - Programación lineal útil para cualquier trabajador de sucursal o directivo sin conocimientos en el ámbito, que dado determinados datos, optimice el número de trayectos que se deben hacer.
     Oportunidad: Optimiza el número de trayectos a realizar, es decir los paquetes entregados y su eficacia a través de datos relevantes.
+    Extra: Optimización entre sucursales por transporte aéreo/marítimo, no solo de envíos directos (Orientado a directivos...)
 
     - Aprendizaje automático para determinar zonas con mayor densidad de recibos de paquetes día a día y así optimizar los envíos en cualquier plazo, ya sea para una organización directa o para elegir ubicaciones para nuevas sucursales/almacenes de la empresa.
     Predecir: nº pedidos en celda H3 en día t+1
@@ -98,9 +99,8 @@ Después internamente se calculan las distancias necesarias para construir la ma
 
 Posteriormente se le pasarían todos los datos al solver para aplicarlo a nuestro modelo de programacion lineal.
 
-
-**COP, funcionamiento del solver**
-El modelo se descompone en dos fases, asignación de clientes a depósitos y para cada depósito con clientes asignados se resuelve un CVRP.
+**COP Solver**
+El modelo se descompone en 2 fases, asignación de clientes a depósitos y para cada depósito con clientes asignados se resuelve un CVRP.
 
 -Fase 1: esta fase es una heuristica greedy que decide que depósito atenderá a cada cliente, esta fase solo se establece "este cliente es parte de este depósito", para ello se recorren todos los clientes uno por uno y asigna cada uno al deposito más cercano que aún tengo capacidad disponible. Se realiza de la siguiente manera:
 
@@ -112,7 +112,6 @@ El modelo se descompone en dos fases, asignación de clientes a depósitos y par
         Volumen acumulado + volumen del cliente < 80% de la capacidad del depósito.
         Volumen acumulado + volumen del cliente < 95% de la capacidad del depósito.
         Sin restricciones de capacidad.
-
 
 -Fase 2: esta fase se ejecuta una vez por cada deposito que tenga clientes asignados.
     -Preparacion del modelo: se crea un grafo donde Nodo 0(es el deposito) y luego Nodos1...N (son los clientes).
@@ -132,8 +131,7 @@ El modelo se descompone en dos fases, asignación de clientes a depósitos y par
     R4: Si un vehículo llega a un punto debe de salir de ese punto.
     R5: Todos los vehículos que salen de un deposito deben volver al mismo deposito.
 
-
-**Datos necesarios para el funcionamiento del solver**
+**Datos necesarios**
 -Lista de depósitos: tan solo se necesita el Id del depósito. (D1, D2, D3)
 
 -Flota de cada depósito: "VAN": número de furgonetas, "TRUCK": número de camiones.
@@ -141,10 +139,9 @@ El modelo se descompone en dos fases, asignación de clientes a depósitos y par
 -Lista de clientes: con su Id, nS: paquetes pequeños, nM: paquetes medianos, nL: paquetes grandes.
 
 -Matriz de distancias:
-    Distancias depósitos a depósito: ("D1", "D2"): X
+    Distancias depósitos a depósito: ("D1", "D2"): X ...
     Distancia entre depósito a cliente: ("C1", "D1"): X
     Distancias cliente a cliente: ("C1", "C2"): X
-
 
 ### Servicio 3
 

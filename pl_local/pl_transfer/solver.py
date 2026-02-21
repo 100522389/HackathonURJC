@@ -69,7 +69,7 @@ def solve_flights(data):
             "fuel_mejor_kg": mejor["fuel_kg"],
             "fuel_peor_kg": peor["fuel_kg"],
             "ahorro_kg": ahorro,
-            "detalle_por_franja": opciones,
+            "por_franja": opciones,
         })
 
     ahorro_total = round(total_peor - total_optimo, 1)
@@ -78,7 +78,7 @@ def solve_flights(data):
         "vuelos": resultados,
         "meteo": meteo,
         "resumen": {
-            "fuel_total_optimo_kg": round(total_optimo, 1),
+            "fuel_total_mejor_kg": round(total_optimo, 1),
             "fuel_total_peor_kg": round(total_peor, 1),
             "ahorro_total_kg": ahorro_total,
             "ahorro_total_pct": round(ahorro_total / total_peor * 100, 2) if total_peor else 0,

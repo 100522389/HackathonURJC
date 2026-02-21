@@ -1,10 +1,10 @@
-"""build_problem.py – Genera meteo simulada + modelo de combustible para 10 aeropuertos × 3 franjas."""
+"""build_problem.py – Genera meteorología + modelo de combustible para 10 aeropuertos en 3 franjas."""
 
 import json
 import math
 import random
 
-# ── 10 aeropuertos DHL europeos (código, nombre, lat, lon) ──
+# ── 10 aeropuertos DHL europeos (código, nombre, lat, lon) Ejemplo ──
 AIRPORTS = {
     "LEJ": ("Leipzig",        51.432, 12.242),
     "CDG": ("Paris-CDG",      49.010,  2.548),
@@ -22,7 +22,7 @@ FRANJAS = ["manana", "tarde", "noche"]
 
 # ── Consumo medio de combustible ──
 _FUEL_KG_KM = 3.5          # kg de queroseno por km (B757F cargado, estimación)
-_CORRIDOR_FACTOR = 1.05    # corredor aéreo vs línea recta
+_CORRIDOR_FACTOR = 1.05    # Despliegue aéreo vs línea recta
 
 
 def _haversine(lat1, lon1, lat2, lon2):
