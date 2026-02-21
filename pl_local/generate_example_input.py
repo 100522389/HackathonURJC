@@ -2,7 +2,7 @@
 generate_example_input.py
 =========================
 Genera un archivo JSON de ejemplo (ejemplo_entrada.json) con datos
-realistas de Madrid para probar el pipeline completo.
+realistas de Madrid para verificar el pipeline completo.
 
   5 depósitos en Madrid
   400 clientes dispersos por la ciudad

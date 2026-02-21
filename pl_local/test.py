@@ -1,5 +1,5 @@
 """
-test.py  –  Pruebas locales del solver MDVRP  (pipeline completa)
+test.py  –  Pruebas locales solver MDVRP  (Pipeline completa)
 =====================================================================
 Ejecutar:   python test.py
          o: python test.py ruta/al/input.json
@@ -18,13 +18,12 @@ import sys
 import time
 from collections import Counter
 from build_problem import build_data_from_file
-from solver_ortools import solve_mdvrp
+from pl_local.solver import solve_mdvrp
 
 
 DEFAULT_INPUT = "ejemplo_entrada.json"
 
 
-# ─────────────────────────── estadísticas ────────────────────────────
 def _print_input_stats(data: dict):
     """Imprime estadísticas del input para entender la escala."""
     n_dep = len(data["depots"])
@@ -51,7 +50,6 @@ def _print_input_stats(data: dict):
     print(f"  Time limit       : {data['time_limit']}s")
 
 
-# ─────────────────────────── ejecución ───────────────────────────────
 def main():
     # ── determinar archivo de entrada ──
     _dir = os.path.dirname(os.path.abspath(__file__))
@@ -106,7 +104,7 @@ def main():
     total_stops = 0
     for vid in sorted(result["routes"].keys()):
         route = result["routes"][vid]
-        occ = result["occupancy"].get(vid, "?")
+        oc = result["occupancy"].get(vid, "?")
         n_stops = len([n for n in route if n.startswith("C")])
         total_stops += n_stops
         # Truncar rutas largas para que se lea bien
@@ -114,10 +112,9 @@ def main():
             route_str = " → ".join(route[:6]) + " → ... → " + " → ".join(route[-3:])
         else:
             route_str = " → ".join(route)
-        print(f"  {vid:22s}  [{n_stops:2d} paradas]  occ: {occ:.0%}  →  {route_str}")
+        print(f"  {vid:22s}  [{n_stops:2d} paradas]  occ: {oc:.0%}  →  {route_str}")
     print()
 
-    # ─── resumen de ocupación ────
     occs = list(result["occupancy"].values())
     if occs:
         avg_occ = sum(occs) / len(occs)
@@ -129,7 +126,6 @@ def main():
         print(f"  Total paradas    : {total_stops}")
         print()
 
-    # ─── validaciones ────
     print("─── VALIDACIONES ───")
     errors = []
 
@@ -161,24 +157,23 @@ def main():
             errors.append(f"Ruta {vid} no empieza/termina en {dep}: {route}")
 
     # Ocupación ≤ 100 %
-    for vid, occ in result["occupancy"].items():
-        if occ > 1.001:
-            errors.append(f"Vehículo {vid} sobrecargado: {occ:.2%}")
+    for vid, oc in result["occupancy"].items():
+        if oc > 1.001:
+            errors.append(f"Vehículo {vid} sobrecargado: {oc:.2%}")
 
     if errors:
-        print("  ⚠ ERRORES:")
+        print("  EXCEPCIONES:")
         for e in errors:
             print(f"    - {e}")
     else:
-        print("  ✓  Todas las validaciones pasaron correctamente.")
+        print("  Todas las validaciones pasaron correctamente.")
 
-    # ─── guardar ────
     print()
     _dir = os.path.dirname(os.path.abspath(__file__))
     output_file = os.path.join(_dir, "resultado_test.json")
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2, default=str)
-    print(f"✓  Resultado guardado en: {output_file}")
+    print(f"Resultado guardado en: {output_file}")
 
 
 if __name__ == "__main__":

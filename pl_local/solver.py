@@ -1,14 +1,12 @@
 """
-solver_ortools.py
-=================
+solver.py
 Multi-Depot VRP con flota heterogénea (VAN / TRUCK) usando Google OR-Tools.
 
 Estrategia:
   - Misma descomposición en 2 fases que solver_mdvrp:
     1) Asignar cada cliente a su depósito más cercano
     2) Resolver un CVRP por depósito con OR-Tools Routing
-  - OR-Tools usa metaheurísticas (guided local search) que dan
-    soluciones casi óptimas en segundos, incluso para cientos de clientes.
+  - OR-Tools usa metaheurísticas que dan soluciones prácticamente óptimas en segundos, incluso para cientos de clientes.
 
 Stack: Google OR-Tools (ortools.constraint_solver.routing)
 
@@ -29,20 +27,18 @@ CAP = {"VAN": 10.0, "TRUCK": 20.0}          # m³
 VOL = {"S": 0.04, "M": 0.20, "L": 0.60}    # m³ por paquete
 
 # Factor de escala: OR-Tools trabaja con enteros, así que
-# multiplicamos km por este factor para mantener precisión
+# multiplicamos km por este factor para ajustar precisión
 _SCALE = 1000  # 3 decimales de precisión
 
 
-# ===================================================================
-# 1. CONSTRUCCIÓN DE VEHÍCULOS VIRTUALES
-# ===================================================================
-def build_vehicles(fleet: Dict[str, Dict[str, int]]) -> List[Dict[str, str]]:
+# Vehículos
+def build_vehicles(flota: Dict[str, Dict[str, int]]) -> List[Dict[str, str]]:
     """
-    Expande la flota en vehículos virtuales individuales.
+    Expande la flota en vehículos virtuales-individuales.
     Retorna: [{"id": "D1_VAN_0", "depot": "D1", "type": "VAN"}, ...]
     """
     vehicles: List[Dict[str, str]] = []
-    for depot_id, types in fleet.items():
+    for depot_id, types in flota.items():
         for vtype, count in types.items():
             if vtype not in CAP:
                 raise ValueError(f"Tipo de vehículo desconocido: {vtype}")
@@ -52,9 +48,8 @@ def build_vehicles(fleet: Dict[str, Dict[str, int]]) -> List[Dict[str, str]]:
     return vehicles
 
 
-# ===================================================================
-# 2. VOLUMEN POR CLIENTE
-# ===================================================================
+# VOLUMEN PARA CADA CLIENTE
+
 def _client_volume(client: dict) -> float:
     nS = client.get("nS", 0)
     nM = client.get("nM", 0)
@@ -62,9 +57,8 @@ def _client_volume(client: dict) -> float:
     return nS * VOL["S"] + nM * VOL["M"] + nL * VOL["L"]
 
 
-# ===================================================================
-# 3. VALIDACIÓN DE INPUT
-# ===================================================================
+# VALIDACIÓN DE INPUT
+
 def _validate_input(data: dict):
     required = {"depots", "clients", "fleet", "dist_matrix"}
     missing = required - set(data.keys())
@@ -76,9 +70,8 @@ def _validate_input(data: dict):
         raise ValueError("Se necesita al menos un cliente.")
 
 
-# ===================================================================
-# 4. ASIGNACIÓN DE CLIENTES A DEPÓSITOS (Fase 1)
-# ===================================================================
+# ASIGNACIÓN DE CLIENTES A DEPÓSITOS (Fase 1)
+
 def assign_clients_to_depots(
     depots: List[dict],
     clients: List[dict],
@@ -101,7 +94,7 @@ def assign_clients_to_depots(
     depot_vol_used: Dict[str, float] = {did: 0.0 for did in depot_ids}
 
     # Asignar por cercanía
-    assignment: Dict[str, List[dict]] = {did: [] for did in depot_ids}
+    asignaciones: Dict[str, List[dict]] = {did: [] for did in depot_ids}
 
     for client in clients:
         cid = client["id"]
@@ -116,12 +109,11 @@ def assign_clients_to_depots(
             dists.append((d, did))
         dists.sort()
 
-        # Asignar al depot más cercano que tenga capacidad (80% max para
-        # dejar margen al bin-packing de OR-Tools)
+        # Asignar al depot más cercano que tenga capacidad (80% max para dejar margen a bin-packing)
         assigned = False
         for _, did in dists:
             if depot_vol_used[did] + vol <= depot_cap[did] * 0.80:
-                assignment[did].append(client)
+                asignaciones[did].append(client)
                 depot_vol_used[did] += vol
                 assigned = True
                 break
@@ -130,21 +122,21 @@ def assign_clients_to_depots(
             # Segunda pasada: aceptar hasta 95% de capacidad
             for _, did in dists:
                 if depot_vol_used[did] + vol <= depot_cap[did] * 0.95:
-                    assignment[did].append(client)
+                    asignaciones[did].append(client)
                     depot_vol_used[did] += vol
                     assigned = True
                     break
 
         if not assigned:
             # Último recurso: asignar al más cercano
-            assignment[dists[0][1]].append(client)
+            asignaciones[dists[0][1]].append(client)
 
-    return assignment
+    return asignaciones
 
 
-# ===================================================================
-# 5. RESOLVER SUB-VRP CON OR-TOOLS
-# ===================================================================
+
+# RESOLVER
+
 def _solve_sub_vrp(
     depot: dict,
     clients: List[dict],
@@ -285,9 +277,9 @@ def _solve_sub_vrp(
     }
 
 
-# ===================================================================
-# 6. FUNCIÓN PRINCIPAL (descomposición por depósito)
-# ===================================================================
+
+# FUNCIÓN PRINCIPAL
+
 def solve_mdvrp(data: dict) -> dict:
     """
     Punto de entrada principal — interfaz idéntica a solver_mdvrp.solve_mdvrp().
@@ -309,7 +301,7 @@ def solve_mdvrp(data: dict) -> dict:
 
     depots      = data["depots"]
     clients     = data["clients"]
-    fleet       = data["fleet"]
+    flota       = data["fleet"]
     dist_matrix = data["dist_matrix"]
     time_limit  = data.get("time_limit", 30)
 
@@ -325,7 +317,7 @@ def solve_mdvrp(data: dict) -> dict:
     dist_matrix = norm_dist
 
     # ══════════════════ FASE 1: ASIGNAR CLIENTES ══════════════════
-    depot_clients = assign_clients_to_depots(depots, clients, fleet, dist_matrix)
+    depot_clients = assign_clients_to_depots(depots, clients, flota, dist_matrix)
 
     # ══════════════════ FASE 2: VRP POR DEPÓSITO ══════════════════
     all_routes: Dict[str, List[str]] = {}
@@ -344,10 +336,10 @@ def solve_mdvrp(data: dict) -> dict:
             continue
 
         # Vehículos de este depósito
-        sub_fleet = {did: fleet[did]}
+        sub_fleet = {did: flota[did]}
         vehicles = build_vehicles(sub_fleet)
 
-        # Resolver sub-VRP con OR-Tools
+        # Resolver
         sub_result = _solve_sub_vrp(
             depot, sub_clients, vehicles, dist_matrix,
             time_limit=time_per_depot,
@@ -384,5 +376,5 @@ def solve_mdvrp(data: dict) -> dict:
         "routes": all_routes,
         "occupancy": all_occupancy,
         "solver_time": solver_time,
-        "gap": 0.0,  # OR-Tools no reporta gap directamente
+        "gap": 0.0,  # No hay gap directo en el solver
     }

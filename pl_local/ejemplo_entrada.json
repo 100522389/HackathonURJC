@@ -31,7 +31,7 @@
       "desc": "Hub Sol (Centro)"
     }
   ],
-  "fleet": {
+  "flota": {
     "D1": {
       "VAN": 6,
       "TRUCK": 5

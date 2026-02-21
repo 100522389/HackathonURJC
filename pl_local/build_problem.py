@@ -7,7 +7,7 @@ Pipeline de pre-procesamiento: convierte un archivo JSON de entrada
 
 Flujo
 -----
-1. El usuario entrega un JSON con depots, fleet2. ``build_data_from_file(path)`` o ``build_data(raw_dict)`` lee/valida.
+1. El usuario entrega un JSON con depots, flt2. ``build_data_from_file(path)`` o ``build_data(raw_dict)`` lee/valida.
 3. Se calcula la matriz de distancias internamente:
      - Haversine (lat/lng en grados) → km
      - Factor de desvío (road_factor) para aproximar distancia real por carretera
@@ -20,7 +20,7 @@ Formato de entrada esperado (JSON)
     {"id": "D1", "lat": 40.4168, "lng": -3.7038},
     ...
   ],
-  "fleet": {
+  "flota": {
     "D1": {"VAN": 6, "TRUCK": 5},
     ...
   },
@@ -49,9 +49,7 @@ from typing import Any, Dict, List, Tuple
 _EARTH_RADIUS_KM = 6_371.0   # radio medio terrestre
 
 
-# ===================================================================
-# 1. CÁLCULO DE DISTANCIAS
-# ===================================================================
+# CÁLCULO DE DISTANCIAS
 
 def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     """Distancia en km entre dos puntos (lat, lng) en grados decimales."""
@@ -78,7 +76,7 @@ def build_distance_matrix(
     Parameters
     ----------
     nodes : lista de dicts con al menos {"id", "lat", "lng"}
-    road_factor : multiplicador para aproximar distancia real por carretera.
+    road_factor : multiplicador para aproximar distancia real a una red vial...
 
     Returns
     -------
@@ -98,14 +96,12 @@ def build_distance_matrix(
     return dist_matrix
 
 
-# ===================================================================
-# 2. VALIDACIÓN DEL JSON DE ENTRADA
-# ===================================================================
+# VALIDACIÓN FICHERO DE ENTRADA (JSON)
 
 def _validate_raw(raw: dict) -> None:
-    """Valida la estructura del JSON de entrada."""
+    """Valida la estructura en el JSON de entrada."""
     # Claves obligatorias
-    for key in ("depots", "fleet", "clients"):
+    for key in ("depots", "flota", "clients"):
         if key not in raw:
             raise ValueError(f"Falta la clave obligatoria '{key}' en el JSON.")
 
@@ -117,17 +113,17 @@ def _validate_raw(raw: dict) -> None:
             if field not in d:
                 raise ValueError(f"Depósito {i}: falta el campo '{field}'.")
 
-    # Fleet
+    # Flota
     depot_ids = {d["id"] for d in raw["depots"]}
-    for did in raw["fleet"]:
+    for did in raw["flota"]:
         if did not in depot_ids:
             raise ValueError(
-                f"Fleet contiene depósito '{did}' que no existe en depots."
+                f"Flota contiene depósito '{did}' que no existe en depots."
             )
     for did in depot_ids:
-        if did not in raw["fleet"]:
+        if did not in raw["flota"]:
             raise ValueError(
-                f"Depósito '{did}' no tiene flota definida en fleet."
+                f"Depósito '{did}' no tiene flota definida en flota."
             )
 
     # Clientes
@@ -147,18 +143,16 @@ def _validate_raw(raw: dict) -> None:
         seen.add(aid)
 
 
-# ===================================================================
-# 3. CONSTRUCCIÓN DEL DICT PARA EL SOLVER
-# ===================================================================
+# DICT PARA EL SOLVER
 
 def build_data(raw: dict) -> dict:
     """
-    Transforma el JSON de entrada del usuario en el dict ``data`` que
+    Transforma el JSON de entrada por el usuario en el dict ``data`` que
     ``solve_mdvrp()`` necesita.
 
     Parameters
     ----------
-    raw : dict con la estructura documentada arriba (depots, fleet, clients,
+    raw : dict con la estructura documentada arriba (depots, flota, clients,
           opcionalmente time_limit y road_factor).
 
     Returns
@@ -180,10 +174,10 @@ def build_data(raw: dict) -> dict:
     # ── distancia ──
     dist_matrix = build_distance_matrix(nodes, road_factor)
 
-    # ── depots limpios (sin coords) ──
+    # ── depots limpios
     depots = [{"id": d["id"]} for d in raw["depots"]]
 
-    # ── clients limpios (sin coords) ──
+    # ── clients limpios
     clients = [
         {"id": c["id"], "nS": c["nS"], "nM": c["nM"], "nL": c["nL"]}
         for c in raw["clients"]
@@ -197,7 +191,7 @@ def build_data(raw: dict) -> dict:
     return {
         "depots": depots,
         "clients": clients,
-        "fleet": raw["fleet"],
+        "flota": raw["flota"],
         "dist_matrix": dist_matrix,
         "time_limit": time_limit,
     }
@@ -205,7 +199,7 @@ def build_data(raw: dict) -> dict:
 
 def build_data_from_file(path: str) -> dict:
     """
-    Lee un archivo JSON y devuelve el dict listo para ``solve_mdvrp()``.
+    Archivo JSON y devuelve el dict listo para ``solve_mdvrp()``.
 
     Parameters
     ----------
