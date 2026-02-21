@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routing import search, pl
+from .routing import search, pl, ml
+
 
 backend = FastAPI(
     title="sostenibility Optimization API",
@@ -19,6 +20,7 @@ backend.add_middleware(
 # Incluir routers
 backend.include_router(search.router1, prefix="/search", tags=["Routing - A* Bidirectional"])
 backend.include_router(pl.router2, prefix="/pl", tags=["Programación Lineal - Multi-Depot VRP"])
+backend.include_router(ml.router3, prefix="/ml", tags=["Machine Learning - Predicción de Demanda"])
 
 
 @backend.on_event("startup")
