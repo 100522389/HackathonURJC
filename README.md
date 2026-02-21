@@ -6,7 +6,7 @@ Documentación inicial
 
 Optimizar la cadena de suministro en base a la sostenibilidad, generando oportunidades:
 
-Se plantea un backend con FastAPI, Uvicorn y Pydantic en Render que tenga 3 servicios principales:
+Se plantea un backend con FastAPI, Uvicorn y Pydantic en Microsoft Azure que tenga 3 servicios principales:
 
     - Búsqueda optimizada mediante Bidirectional A* (Road) para importaciones y exportaciones en USA (Ejemplo DIMAC), entre un punto determinado de exportación o importación por mar o aire y un punto determinado que se ajustará a los disponibles en el mapa para hacer los cambios.
     Oportunidad: Coste de sostenibilidad (Energía) en las redes viales que son las rutas menos optimizadas a diferencia de las marítimas y aéreas
@@ -18,7 +18,7 @@ Se plantea un backend con FastAPI, Uvicorn y Pydantic en Render que tenga 3 serv
     Predecir: nº pedidos en celda H3 en día t+1
     Oportunidad: Last mile, puedes obtener la densidad de paquetes en cada zona para el día siguiente o incluso el mes siguiente...
 
-El frontend se planea hacer de forma completa en Hostinger, pero por si acaso, se creará otro estático para Render o Netlify.
+El frontend se planea hacer de forma completa en Hostinger, pero por si acaso, se creará otro estático para Microsoft Azure/Netlify.
 
 ### Servicio 1
 
