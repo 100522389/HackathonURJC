@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from .routing import search, pl, ml
 
 load_dotenv()  # Carga variables desde .env
@@ -49,3 +51,12 @@ backend.include_router(ml.router3, prefix="/ml", tags=["Predicción de pedidos p
 def health_check():
     """Sonda de salud para Microsoft Azure."""
     return {"status": "ok", "version": "1.0.1"}
+
+
+# Serve static frontend (HTML puro, sin npm)
+_STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
+
+
+@backend.get("/", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(os.path.join(_STATIC_DIR, "index.html"))

@@ -23,6 +23,7 @@ ENV/
 
 # Dependencias
 site-packages/
+node_modules/
 
 # Jupyter
 .ipynb_checkpoints/

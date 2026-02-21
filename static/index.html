@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S&O Logística — Logística inteligente. Impacto sostenible.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            yellow: '#FFCC00',
+            red: '#E53935',
+            darkGray: '#2D2D2D',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .page-fade-in { animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .card-hover { transition: all 0.3s ease-out; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; }
+    .toast { background: #2D2D2D; color: #fff; padding: 14px 20px; border-radius: 12px; margin-top: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); animation: slideIn 0.3s ease-out; max-width: 360px; }
+    .toast.error { border-left: 4px solid #E53935; }
+    .toast.success { border-left: 4px solid #22c55e; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    select, input[type="number"], textarea { outline: none; }
+    select:focus, input:focus, textarea:focus { box-shadow: 0 0 0 2px #FFCC00; border-color: transparent; }
+  </style>
+</head>
+<body class="bg-white text-darkGray">
+
+<!-- Toast container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Header -->
+<header id="main-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+  <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16 md:h-20">
+      <a href="#/" class="flex items-center space-x-2 group">
+        <div class="flex items-center">
+          <span class="text-2xl md:text-3xl font-bold text-yellow">S</span>
+          <span class="text-2xl md:text-3xl font-bold text-red">&</span>
+          <span class="text-2xl md:text-3xl font-bold text-yellow">O</span>
+        </div>
+        <span class="hidden sm:block text-sm font-medium text-darkGray group-hover:text-yellow transition-colors">Logística</span>
+      </a>
+      <div class="hidden lg:flex items-center space-x-1" id="nav-links"></div>
+      <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="lg:hidden hidden pb-4"></div>
+  </nav>
+</header>
+
+<!-- Main content -->
+<main id="app" class="min-h-screen"></main>
+
+<!-- Footer -->
+<footer class="bg-gray-50 border-t border-gray-200">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 mb-12">
+      <div class="space-y-4">
+        <div class="flex items-center space-x-1">
+          <span class="text-3xl font-bold text-yellow">S</span>
+          <span class="text-3xl font-bold text-red">&</span>
+          <span class="text-3xl font-bold text-yellow">O</span>
+        </div>
+        <p class="text-sm text-gray-600 leading-relaxed">Soluciones inteligentes de logística para un futuro sostenible. Optimizamos rutas, envíos y demanda con tecnología de vanguardia.</p>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-darkGray uppercase tracking-wider mb-4">Servicios</h4>
+        <ul class="space-y-2">
+          <li><a href="#/ruta" class="text-sm text-gray-600 hover:text-yellow transition-colors">Routing (A*)</a></li>
+          <li><a href="#/envios" class="text-sm text-gray-600 hover:text-yellow transition-colors">Programación Lineal</a></li>
+          <li><a href="#/demanda" class="text-sm text-gray-600 hover:text-yellow transition-colors">Predicción ML</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-darkGray uppercase tracking-wider mb-4">Empresa</h4>
+        <ul class="space-y-2">
+          <li><a href="#/" class="text-sm text-gray-600 hover:text-yellow transition-colors">Sobre Nosotros</a></li>
+          <li><a href="#/" class="text-sm text-gray-600 hover:text-yellow transition-colors">Contacto</a></li>
+          <li><a href="#/" class="text-sm text-gray-600 hover:text-yellow transition-colors">Documentación</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-darkGray uppercase tracking-wider mb-4">Legal</h4>
+        <ul class="space-y-2">
+          <li><a href="#/" class="text-sm text-gray-600 hover:text-yellow transition-colors">Privacidad</a></li>
+          <li><a href="#/" class="text-sm text-gray-600 hover:text-yellow transition-colors">Términos</a></li>
+          <li><a href="#/" class="text-sm text-gray-600 hover:text-yellow transition-colors">Cookies</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-200 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-gray-500">&copy; 2025 S&O Logística. Hackathon URJC.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ══════════════════════════════════════════════════════════════════════
+const API_BASE = location.origin;  // served from same host
+const API = {
+  SEARCH:          `${API_BASE}/search`,
+  PL_OPTIMIZE:     `${API_BASE}/pl/optimize`,
+  PL_TRANSFER:     `${API_BASE}/pl/transfer`,
+  ML_PREDECIR_ZONA:`${API_BASE}/ml/predecir-zona`,
+  ML_PREDICT_GPS:  `${API_BASE}/ml/predict-gps`,
+  HEALTH:          `${API_BASE}/health`,
+};
+
+const POIS = [
+  { id:1872871,  name:"Puerto de Los Ángeles/Long Beach",   type:"seaport", lat:33.7309, lon:-118.2631 },
+  { id:14905240, name:"Puerto de Nueva York/Nueva Jersey",  type:"seaport", lat:40.6853, lon:-74.0705 },
+  { id:18854611, name:"Puerto de Houston/Galveston",        type:"seaport", lat:29.7406, lon:-95.0747 },
+  { id:5020769,  name:"Puerto de Savannah, GA",             type:"seaport", lat:32.0830, lon:-81.0993 },
+  { id:18035492, name:"Puerto de Charleston, SC",           type:"seaport", lat:32.7764, lon:-79.9310 },
+  { id:22681045, name:"Puerto de Seattle/Tacoma",           type:"seaport", lat:47.3326, lon:-122.3724 },
+  { id:9928058,  name:"Puerto de Baltimore, MD",            type:"seaport", lat:39.2670, lon:-76.5806 },
+  { id:7940251,  name:"Puerto de Nueva Orleans, LA",        type:"seaport", lat:29.9509, lon:-90.0715 },
+  { id:3916569,  name:"Puerto de Miami, FL",                type:"seaport", lat:25.7764, lon:-80.1782 },
+  { id:21797733, name:"Puerto de Norfolk/Virginia Beach",   type:"seaport", lat:36.8970, lon:-76.3003 },
+  { id:3772129,  name:"Puerto de Jacksonville, FL",         type:"seaport", lat:30.3276, lon:-81.6561 },
+  { id:1703986,  name:"Puerto de Oakland, CA",              type:"seaport", lat:37.7969, lon:-122.2780 },
+  { id:18944209, name:"Puerto de Filadelfia, PA",           type:"seaport", lat:39.9371, lon:-75.1445 },
+  { id:20532798, name:"Laredo, TX (frontera México)",       type:"border",  lat:27.5037, lon:-99.5073 },
+  { id:18762184, name:"El Paso, TX / Ciudad Juárez",        type:"border",  lat:31.7619, lon:-106.4845 },
+  { id:11600304, name:"Detroit-Windsor Crossing",           type:"border",  lat:42.3265, lon:-83.0457 },
+  { id:15102684, name:"Buffalo-Niagara Falls, NY",          type:"border",  lat:42.8860, lon:-78.8788 },
+  { id:3225467,  name:"San Diego / Tijuana (Otay Mesa)",    type:"border",  lat:32.5682, lon:-116.9710 },
+  { id:1681235,  name:"Nogales, AZ",                        type:"border",  lat:31.3404, lon:-110.9344 },
+  { id:1503480,  name:"Douglas, AZ / Agua Prieta",          type:"border",  lat:31.3444, lon:-109.5455 },
+  { id:16784846, name:"Aeropuerto JFK, Nueva York",         type:"airport", lat:40.6440, lon:-73.7792 },
+  { id:6818867,  name:"Aeropuerto O'Hare, Chicago",         type:"airport", lat:41.9761, lon:-87.9035 },
+  { id:2437764,  name:"Aeropuerto LAX, Los Ángeles",        type:"airport", lat:33.9432, lon:-118.4080 },
+  { id:2988074,  name:"Aeropuerto de Miami, FL",            type:"airport", lat:25.8030, lon:-80.2890 },
+  { id:9602138,  name:"Aeropuerto de Louisville (UPS Hub)", type:"airport", lat:38.1715, lon:-85.7451 },
+  { id:19519790, name:"Aeropuerto de Memphis (FedEx Hub)",  type:"airport", lat:35.0423, lon:-89.9706 },
+];
+
+// ══════════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════════
+function showToast(title, msg, type='success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<div class="font-semibold text-sm">${title}</div><div class="text-xs text-gray-300 mt-1">${msg}</div>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 4000);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════════
+const NAV_LINKS = [
+  { name: 'Home', path: '#/' },
+  { name: 'Routing', path: '#/ruta' },
+  { name: 'Programación Lineal', path: '#/envios' },
+  { name: 'Predicción ML', path: '#/demanda' },
+];
+
+function getRoute() {
+  return location.hash.replace('#','') || '/';
+}
+
+function updateNav() {
+  const route = getRoute();
+  // Desktop
+  const navEl = document.getElementById('nav-links');
+  navEl.innerHTML = NAV_LINKS.map(l => {
+    const active = (route === l.path.replace('#',''));
+    return `<a href="${l.path}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${active ? 'bg-yellow text-darkGray' : 'text-darkGray hover:bg-yellow/10 hover:text-yellow'}">${l.name}</a>`;
+  }).join('');
+  // Mobile
+  const mobileEl = document.getElementById('mobile-menu');
+  mobileEl.innerHTML = NAV_LINKS.map(l => {
+    const active = (route === l.path.replace('#',''));
+    return `<a href="${l.path}" class="block px-4 py-3 rounded-lg text-sm font-medium ${active ? 'bg-yellow text-darkGray' : 'text-gray-600 hover:bg-gray-100'}">${l.name}</a>`;
+  }).join('');
+}
+
+document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+  document.getElementById('mobile-menu').classList.toggle('hidden');
+});
+
+// ══════════════════════════════════════════════════════════════════════
+//  ROUTER
+// ══════════════════════════════════════════════════════════════════════
+function router() {
+  updateNav();
+  const route = getRoute();
+  const app = document.getElementById('app');
+  // Destroy existing Leaflet maps
+  if (window._currentMaps) { window._currentMaps.forEach(m => m.remove()); }
+  window._currentMaps = [];
+
+  switch(route) {
+    case '/ruta':    renderRuta(app); break;
+    case '/envios':  renderEnvios(app); break;
+    case '/demanda': renderDemanda(app); break;
+    default:         renderHome(app); break;
+  }
+  window.scrollTo(0,0);
+  // Close mobile menu
+  document.getElementById('mobile-menu').classList.add('hidden');
+}
+
+window.addEventListener('hashchange', router);
+window.addEventListener('DOMContentLoaded', router);
+
+// ══════════════════════════════════════════════════════════════════════
+//  HOME PAGE
+// ══════════════════════════════════════════════════════════════════════
+function renderHome(el) {
+  el.innerHTML = `
+  <div class="page-fade-in">
+    <!-- Hero -->
+    <section class="relative h-[600px] md:h-[700px] flex items-center justify-center overflow-hidden">
+      <div class="absolute inset-0 z-0">
+        <img src="https://images.unsplash.com/photo-1686061593213-98dad7c599b9" alt="Logistics" class="w-full h-full object-cover"/>
+        <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/60 to-gray-900/40"></div>
+      </div>
+      <div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+          Logística inteligente.<br><span class="text-yellow">Impacto sostenible.</span>
+        </h1>
+        <p class="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
+          Optimizamos tu cadena de suministro con algoritmos avanzados y machine learning. Reduce costos, mejora eficiencia y minimiza tu huella de carbono.
+        </p>
+        <a href="#/ruta" class="inline-block bg-yellow hover:bg-yellow/90 text-darkGray font-semibold px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+          Explorar servicios
+        </a>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section class="py-12 md:py-16 lg:py-20 bg-white">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-4xl font-bold text-darkGray mb-4">Nuestros Servicios</h2>
+          <p class="text-lg text-gray-600 max-w-2xl mx-auto">Soluciones tecnológicas de vanguardia para cada desafío logístico</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          ${[
+            { icon:'🗺️', title:'Routing — A* Bidireccional', desc:'Mapa interactivo con A* bidireccional sobre 23.9M nodos de la red vial de EE.UU. Selecciona puntos o POIs de importación/exportación.', path:'#/ruta', color:'text-blue-600', bg:'bg-blue-50' },
+            { icon:'🚛', title:'Programación Lineal', desc:'Multi-Depot VRP para camiones/furgonetas y optimización aérea entre sucursales. Sube tu JSON y obtén la solución óptima.', path:'#/envios', color:'text-green-600', bg:'bg-green-50' },
+            { icon:'📈', title:'Predicción de Demanda (ML)', desc:'LightGBM para predecir pedidos por zona H3 en Hangzhou. MAE 1.75. Predicción por historial o posición GPS.', path:'#/demanda', color:'text-purple-600', bg:'bg-purple-50' },
+          ].map(s => `
+            <a href="${s.path}">
+              <div class="bg-white border border-gray-200 rounded-2xl p-6 h-full card-hover shadow hover:border-yellow transition-all duration-300">
+                <div class="${s.bg} ${s.color} w-14 h-14 rounded-xl flex items-center justify-center mb-4 text-2xl">${s.icon}</div>
+                <h3 class="text-xl font-semibold text-darkGray mb-3">${s.title}</h3>
+                <p class="text-gray-600 leading-relaxed">${s.desc}</p>
+              </div>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Metrics -->
+    <section class="py-12 md:py-16 lg:py-20 bg-gradient-to-br from-yellow/10 to-red/10">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-4xl font-bold text-darkGray mb-4">Resultados que Importan</h2>
+          <p class="text-lg text-gray-600 max-w-2xl mx-auto">Métricas clave de nuestras soluciones de optimización</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+          ${[
+            { value:'23.9M', label:'nodos', desc:'Red vial procesada' },
+            { value:'1.75', label:'MAE', desc:'Precisión predicción' },
+            { value:'2.85%', label:'ahorro', desc:'Combustible aéreo' },
+          ].map(m => `
+            <div class="text-center">
+              <div class="bg-white rounded-2xl p-8 shadow-lg">
+                <div class="text-5xl md:text-6xl font-bold text-yellow mb-2">${m.value}</div>
+                <div class="text-xl font-semibold text-darkGray mb-2">${m.label}</div>
+                <p class="text-gray-600">${m.desc}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-12 md:py-16 lg:py-20 bg-darkGray text-white">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-6">¿Listo para optimizar tu logística?</h2>
+        <p class="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">Descubre cómo nuestras soluciones pueden transformar tu cadena de suministro</p>
+        <a href="#/ruta" class="inline-block bg-yellow hover:bg-yellow/90 text-darkGray font-semibold px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">Comenzar ahora</a>
+      </div>
+    </section>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  RUTA PAGE
+// ══════════════════════════════════════════════════════════════════════
+function renderRuta(el) {
+  const state = { source: null, target: null, usePOI: false, selectedPOI: '', loading: false, results: null, routeLayer: null, markers: [], poiMarkers: [] };
+
+  el.innerHTML = `
+  <div class="min-h-screen bg-gray-50 pt-20 md:pt-24 page-fade-in">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div class="mb-6">
+        <div class="flex flex-wrap items-center gap-3 mb-3">
+          <h1 class="text-3xl md:text-4xl font-bold text-darkGray">Optimización de Ruta</h1>
+          <span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">A* Bidireccional</span>
+        </div>
+        <p class="text-lg text-gray-600">Red Vial de EE.UU. — 23.9M nodos · Haz clic en el mapa para seleccionar puntos</p>
+      </div>
+
+      <!-- Mode selector -->
+      <div class="bg-white rounded-2xl shadow-lg p-5 mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="ruta-usePOI" class="w-5 h-5 rounded border-gray-300 accent-yellow"/>
+            <span class="font-medium text-darkGray">Usar punto de importación/exportación como destino</span>
+          </label>
+          <select id="ruta-poi-select" class="hidden flex-1 min-w-[280px] px-4 py-2.5 border border-gray-300 rounded-lg text-darkGray bg-white text-sm">
+            <option value="">-- Selecciona un punto --</option>
+            <optgroup label="Puerto Marítimo">${POIS.filter(p=>p.type==='seaport').map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</optgroup>
+            <optgroup label="Aeropuerto">${POIS.filter(p=>p.type==='airport').map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</optgroup>
+            <optgroup label="Frontera">${POIS.filter(p=>p.type==='border').map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</optgroup>
+          </select>
+        </div>
+        <p id="ruta-mode-hint" class="text-sm text-gray-500 mt-2">Haz clic en 2 puntos del mapa: primero origen (verde) y luego destino (rojo).</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div id="ruta-map" style="height:600px;"></div>
+        </div>
+        <div class="space-y-5">
+          <div class="bg-white rounded-2xl shadow-lg p-5">
+            <h2 class="text-lg font-bold text-darkGray mb-4">Puntos seleccionados</h2>
+            <div class="space-y-3 mb-5">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-green-500 shrink-0"></span>
+                <span class="text-sm text-gray-500">Origen:</span>
+                <span id="ruta-src-label" class="text-sm font-medium text-darkGray truncate">Clic en mapa</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-red-500 shrink-0"></span>
+                <span class="text-sm text-gray-500">Destino:</span>
+                <span id="ruta-tgt-label" class="text-sm font-medium text-darkGray truncate">Clic en mapa</span>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <button id="ruta-calc-btn" class="flex-1 bg-yellow hover:bg-yellow/90 text-darkGray font-semibold py-3 rounded-xl transition-all">Calcular ruta</button>
+              <button id="ruta-reset-btn" class="py-3 px-4 rounded-xl border border-gray-300 hover:border-yellow transition-all text-gray-500">↻</button>
+            </div>
+          </div>
+          <div id="ruta-results" class="hidden bg-white rounded-2xl shadow-lg p-5"></div>
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <h3 class="font-semibold text-darkGray mb-1 text-sm">Algoritmo A* Bidireccional</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">Búsqueda simultánea desde origen y destino en la red vial de EE.UU. (DIMACS). 35-50% menos nodos expandidos que A* unidireccional. Heurística euclídea con criterio de parada de Ira Pohl.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  // Init map
+  const map = L.map('ruta-map').setView([39.8283, -98.5795], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map);
+  window._currentMaps = [map];
+
+  const SHADOW = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png';
+  const mkIcon = (c) => L.icon({ iconUrl:`https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${c}.png`, shadowUrl:SHADOW, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41] });
+  const greenIcon = mkIcon('green'), redIcon = mkIcon('red'), blueIcon = mkIcon('blue'), orangeIcon = mkIcon('orange'), violetIcon = mkIcon('violet');
+  const POI_ICONS = { seaport: blueIcon, airport: violetIcon, border: orangeIcon };
+
+  function clearMarkers() { state.markers.forEach(m=>m.remove()); state.markers = []; if(state.routeLayer) { state.routeLayer.remove(); state.routeLayer = null; } }
+  function clearPOIMarkers() { state.poiMarkers.forEach(m=>m.remove()); state.poiMarkers = []; }
+  function updateLabels() {
+    document.getElementById('ruta-src-label').textContent = state.source ? `${state.source.lat.toFixed(4)}, ${state.source.lon.toFixed(4)}` : 'Clic en mapa';
+    const tgtEl = document.getElementById('ruta-tgt-label');
+    if (state.target) tgtEl.textContent = `${state.target.lat.toFixed(4)}, ${state.target.lon.toFixed(4)}`;
+    else if (state.usePOI && state.selectedPOI) { const poi = POIS.find(p=>p.id===parseInt(state.selectedPOI)); tgtEl.textContent = poi ? poi.name : 'Clic en mapa'; }
+    else tgtEl.textContent = 'Clic en mapa';
+  }
+
+  function showPOIMarkers() {
+    clearPOIMarkers();
+    POIS.forEach(poi => {
+      const m = L.marker([poi.lat, poi.lon], { icon: POI_ICONS[poi.type] || blueIcon }).addTo(map)
+        .bindPopup(`<strong>${poi.name}</strong><br>${poi.type==='seaport'?'Puerto':poi.type==='airport'?'Aeropuerto':'Frontera'}`);
+      state.poiMarkers.push(m);
+    });
+  }
+
+  map.on('click', (e) => {
+    if (state.usePOI) {
+      clearMarkers();
+      state.source = { lat: e.latlng.lat, lon: e.latlng.lng };
+      state.target = null;
+      state.results = null;
+      const m = L.marker([e.latlng.lat, e.latlng.lng], { icon: greenIcon }).addTo(map).bindPopup(`Origen: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
+      state.markers.push(m);
+    } else {
+      if (!state.source) {
+        state.source = { lat: e.latlng.lat, lon: e.latlng.lng };
+        const m = L.marker([e.latlng.lat, e.latlng.lng], { icon: greenIcon }).addTo(map).bindPopup(`Origen: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
+        state.markers.push(m);
+      } else if (!state.target) {
+        state.target = { lat: e.latlng.lat, lon: e.latlng.lng };
+        const m = L.marker([e.latlng.lat, e.latlng.lng], { icon: redIcon }).addTo(map).bindPopup(`Destino: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
+        state.markers.push(m);
+      } else {
+        clearMarkers();
+        state.source = { lat: e.latlng.lat, lon: e.latlng.lng };
+        state.target = null; state.results = null;
+        const m = L.marker([e.latlng.lat, e.latlng.lng], { icon: greenIcon }).addTo(map).bindPopup(`Origen: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
+        state.markers.push(m);
+      }
+    }
+    updateLabels();
+    document.getElementById('ruta-results').classList.add('hidden');
+  });
+
+  // POI checkbox
+  document.getElementById('ruta-usePOI').addEventListener('change', (e) => {
+    state.usePOI = e.target.checked;
+    document.getElementById('ruta-poi-select').classList.toggle('hidden', !state.usePOI);
+    document.getElementById('ruta-mode-hint').textContent = state.usePOI
+      ? 'Haz clic en el mapa para definir el origen. El destino será el POI seleccionado.'
+      : 'Haz clic en 2 puntos del mapa: primero origen (verde) y luego destino (rojo).';
+    clearMarkers(); clearPOIMarkers();
+    state.source = null; state.target = null; state.results = null;
+    updateLabels();
+    document.getElementById('ruta-results').classList.add('hidden');
+    if (state.usePOI) showPOIMarkers();
+  });
+
+  document.getElementById('ruta-poi-select').addEventListener('change', (e) => {
+    state.selectedPOI = e.target.value;
+    updateLabels();
+  });
+
+  // Reset
+  document.getElementById('ruta-reset-btn').addEventListener('click', () => {
+    clearMarkers();
+    state.source = null; state.target = null; state.results = null; state.selectedPOI = '';
+    document.getElementById('ruta-poi-select').value = '';
+    updateLabels();
+    document.getElementById('ruta-results').classList.add('hidden');
+  });
+
+  // Calculate
+  document.getElementById('ruta-calc-btn').addEventListener('click', async () => {
+    let src, tgt;
+    if (state.usePOI) {
+      if (!state.source) { showToast('Origen requerido', 'Haz clic en el mapa para seleccionar el punto de origen.', 'error'); return; }
+      if (!state.selectedPOI) { showToast('POI requerido', 'Selecciona un punto de importación/exportación.', 'error'); return; }
+      const poi = POIS.find(p => p.id === parseInt(state.selectedPOI));
+      src = state.source; tgt = { lat: poi.lat, lon: poi.lon };
+      state.target = tgt;
+      const m = L.marker([tgt.lat, tgt.lon], { icon: redIcon }).addTo(map).bindPopup(`Destino: ${poi.name}`);
+      state.markers.push(m);
+      updateLabels();
+    } else {
+      if (!state.source || !state.target) { showToast('Puntos requeridos', 'Haz clic en 2 puntos del mapa para definir origen y destino.', 'error'); return; }
+      src = state.source; tgt = state.target;
+    }
+
+    const btn = document.getElementById('ruta-calc-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner inline-block w-4 h-4 border-2 border-darkGray/30 border-t-darkGray rounded-full mr-2"></span>Calculando...';
+
+    try {
+      const url = `${API.SEARCH}?source_lat=${src.lat}&source_lon=${src.lon}&target_lat=${tgt.lat}&target_lon=${tgt.lon}`;
+      const res = await fetch(url);
+      if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.detail || `Error ${res.status}`); }
+      const data = await res.json();
+      state.results = data;
+
+      if (state.routeLayer) { state.routeLayer.remove(); }
+      if (data.geometry && data.geometry.length > 0) {
+        state.routeLayer = L.polyline(data.geometry.map(g=>[g.lat, g.lon]), { color:'#FFCC00', weight:4, opacity:0.9 }).addTo(map);
+        map.fitBounds(state.routeLayer.getBounds(), { padding: [40,40] });
+      }
+
+      const resEl = document.getElementById('ruta-results');
+      resEl.classList.remove('hidden');
+      if (data.found) {
+        resEl.innerHTML = `
+          <h2 class="text-lg font-bold text-darkGray mb-4">Resultados</h2>
+          <div class="space-y-3">
+            <div class="border-b border-gray-100 pb-3"><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Coste total</span><span class="text-2xl font-bold text-yellow">${data.cost?.toLocaleString()}</span></div>
+            <div class="border-b border-gray-100 pb-3"><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Nodos expandidos</span><span class="text-lg font-semibold text-darkGray">${data.nodes_expanded?.toLocaleString()}</span></div>
+            <div class="border-b border-gray-100 pb-3"><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Tiempo de ejecución</span><span class="text-lg font-semibold text-darkGray">⏱ ${data.execution_time_ms} ms</span></div>
+            <div><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Nodos en el camino</span><span class="text-lg font-semibold text-darkGray">${data.path?.length?.toLocaleString()}</span></div>
+          </div>`;
+      } else {
+        resEl.innerHTML = `<h2 class="text-lg font-bold text-darkGray mb-4">Resultados</h2><div class="flex items-center gap-2 text-red-600"><span>⚠</span><span class="text-sm">No se encontró camino entre estos puntos.</span></div>`;
+        showToast('Sin ruta', 'No se encontró un camino entre los puntos seleccionados.', 'error');
+      }
+    } catch (err) {
+      showToast('Error', err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Calcular ruta';
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  ENVIOS PAGE
+// ══════════════════════════════════════════════════════════════════════
+const VRP_EXAMPLE = {"depots":[{"id":"D1","lat":40.4168,"lng":-3.7038,"desc":"Madrid"},{"id":"D2","lat":41.3851,"lng":2.1734,"desc":"Barcelona"}],"flota":{"D1":{"VAN":3,"TRUCK":2},"D2":{"VAN":2,"TRUCK":1}},"clients":[{"id":"C1","lat":40.453,"lng":-3.688,"nS":10,"nM":3,"nL":1},{"id":"C2","lat":40.430,"lng":-3.710,"nS":5,"nM":2,"nL":0},{"id":"C3","lat":41.390,"lng":2.160,"nS":8,"nM":0,"nL":2},{"id":"C4","lat":41.400,"lng":2.180,"nS":3,"nM":4,"nL":1},{"id":"C5","lat":40.470,"lng":-3.650,"nS":6,"nM":1,"nL":0},{"id":"C6","lat":41.370,"lng":2.150,"nS":12,"nM":2,"nL":1}],"time_limit":30,"road_factor":1.3};
+const TRANSFER_EXAMPLE = {"vuelos":[{"id":"V1","origen":"LEJ","destino":"MAD"},{"id":"V2","origen":"LEJ","destino":"BCN"},{"id":"V3","origen":"CDG","destino":"FRA"},{"id":"V4","origen":"LEJ","destino":"MXP"},{"id":"V5","origen":"BRU","destino":"LIS"}],"weather_seed":42};
+const AIRPORTS_INFO = {LEJ:'Leipzig',CDG:'Paris-CDG',FRA:'Frankfurt',MAD:'Madrid',BCN:'Barcelona',BRU:'Bruselas',EMA:'East Midlands',LIS:'Lisboa',MXP:'Milan-Malpensa',VIE:'Viena'};
+
+function renderEnvios(el) {
+  let activeTab = 'vrp', jsonContent = '', loading = false;
+
+  function render() {
+    el.innerHTML = `
+    <div class="min-h-screen bg-gray-50 pt-20 md:pt-24 page-fade-in">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div class="mb-6">
+          <h1 class="text-3xl md:text-4xl font-bold text-darkGray mb-3">Optimización de Envíos</h1>
+          <p class="text-lg text-gray-600">Programación Lineal — Sube un JSON con los datos de tu problema</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-6">
+          <button id="env-tab-vrp" class="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all ${activeTab==='vrp'?'bg-yellow text-darkGray shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}">
+            🚛 Camiones / Furgonetas (VRP)
+          </button>
+          <button id="env-tab-transfer" class="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all ${activeTab==='transfer'?'bg-yellow text-darkGray shadow-md':'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}">
+            ✈️ Aviones (Transfer)
+          </button>
+        </div>
+
+        <!-- Upload section -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8">
+          <h2 class="text-xl font-bold text-darkGray mb-2">${activeTab==='vrp'?'Multi-Depot VRP — Flotas terrestres':'Transfer — Optimización aérea entre sucursales'}</h2>
+          <p class="text-sm text-gray-500 mb-6">${activeTab==='vrp'?'Sube un JSON con depots (id, lat, lng), flota (VAN/TRUCK por depósito), clients (id, lat, lng, nS, nM, nL).':'Sube un JSON con vuelos (id, origen, destino). Aeropuertos válidos: LEJ, CDG, FRA, MAD, BCN, BRU, EMA, LIS, MXP, VIE.'}</p>
+
+          <div id="env-drop-zone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-yellow hover:bg-yellow/5 transition-all">
+            <div class="text-4xl mb-3 text-gray-400">📤</div>
+            <p class="font-medium text-darkGray mb-1" id="env-file-name">Haz clic o arrastra un archivo JSON</p>
+            <p class="text-sm text-gray-400">Solo archivos .json</p>
+            <input id="env-file-input" type="file" accept=".json,application/json" class="hidden"/>
+          </div>
+
+          ${jsonContent ? `
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-gray-600">📄 Vista previa del JSON</span>
+              <span class="text-xs text-gray-400">${jsonContent.length} caracteres</span>
+            </div>
+            <textarea id="env-json-area" rows="10" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm text-darkGray bg-gray-50 resize-y">${jsonContent}</textarea>
+          </div>` : ''}
+
+          <div class="flex flex-col sm:flex-row gap-3 mt-6">
+            <button id="env-load-example" class="flex-1 py-3 text-base rounded-xl border border-gray-300 hover:border-yellow bg-white font-medium transition-all">Cargar ejemplo</button>
+            <button id="env-download-example" class="py-3 px-4 rounded-xl border border-gray-300 hover:border-yellow bg-white font-medium transition-all">⬇ Descargar ejemplo</button>
+            <button id="env-optimize-btn" class="flex-1 bg-yellow hover:bg-yellow/90 text-darkGray font-semibold py-3 text-base rounded-xl transition-all ${!jsonContent?'opacity-50 cursor-not-allowed':''}">
+              ${loading?'<span class="spinner inline-block w-4 h-4 border-2 border-darkGray/30 border-t-darkGray rounded-full mr-2"></span>Optimizando...':'Optimizar'}
+            </button>
+          </div>
+        </div>
+
+        <div id="env-results"></div>
+
+        <!-- Info boxes -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+          <div class="bg-green-50 border border-green-200 rounded-xl p-5">
+            <h3 class="font-semibold text-darkGray mb-1">VRP — Camiones y Furgonetas</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">Resolución de MDVRP con OR-Tools: asignación greedy de clientes a depósitos y CVRP con metaheurística GLS. Tipos: VAN (10 m³), TRUCK (20 m³). Paquetes: S (0.04 m³), M (0.20 m³), L (0.60 m³).</p>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+            <h3 class="font-semibold text-darkGray mb-1">Transfer — Aviones</h3>
+            <p class="text-sm text-gray-600 leading-relaxed">Minimiza el consumo de combustible eligiendo la mejor franja horaria (mañana/tarde/noche) para cada vuelo, considerando condiciones meteorológicas simuladas (viento, visibilidad, lluvia, tormentas).</p>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    // Events
+    document.getElementById('env-tab-vrp').addEventListener('click', () => { activeTab='vrp'; jsonContent=''; render(); });
+    document.getElementById('env-tab-transfer').addEventListener('click', () => { activeTab='transfer'; jsonContent=''; render(); });
+
+    const dropZone = document.getElementById('env-drop-zone');
+    const fileInput = document.getElementById('env-file-input');
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const f = e.target.files?.[0]; if (!f) return;
+      document.getElementById('env-file-name').textContent = f.name;
+      const reader = new FileReader();
+      reader.onload = (ev) => { jsonContent = ev.target.result; render(); };
+      reader.readAsText(f);
+    });
+
+    document.getElementById('env-load-example').addEventListener('click', () => {
+      jsonContent = JSON.stringify(activeTab==='vrp'?VRP_EXAMPLE:TRANSFER_EXAMPLE, null, 2);
+      showToast('Ejemplo cargado', `JSON de ejemplo para ${activeTab==='vrp'?'camiones':'aviones'} listo.`);
+      render();
+    });
+
+    document.getElementById('env-download-example').addEventListener('click', () => {
+      const example = activeTab==='vrp'?VRP_EXAMPLE:TRANSFER_EXAMPLE;
+      const blob = new Blob([JSON.stringify(example, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `ejemplo_${activeTab}.json`; a.click(); URL.revokeObjectURL(a.href);
+    });
+
+    // JSON area sync
+    const jsonArea = document.getElementById('env-json-area');
+    if (jsonArea) jsonArea.addEventListener('input', (e) => { jsonContent = e.target.value; });
+
+    document.getElementById('env-optimize-btn').addEventListener('click', async () => {
+      if (!jsonContent.trim()) { showToast('JSON requerido', 'Sube un archivo JSON o carga un ejemplo.', 'error'); return; }
+      let parsed;
+      try { parsed = JSON.parse(jsonContent); } catch { showToast('JSON inválido', 'El archivo no contiene JSON válido.', 'error'); return; }
+      const endpoint = activeTab==='vrp'?API.PL_OPTIMIZE:API.PL_TRANSFER;
+      loading = true; render();
+      try {
+        const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(parsed) });
+        if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.detail || `Error ${res.status}`); }
+        const data = await res.json();
+        loading = false; render();
+        showToast('Optimización completada', 'Los resultados están listos.');
+        renderEnviosResults(data, activeTab);
+      } catch (err) {
+        loading = false; render();
+        showToast('Error', err.message, 'error');
+      }
+    });
+  }
+  render();
+}
+
+function renderEnviosResults(data, tab) {
+  const el = document.getElementById('env-results');
+  if (!el) return;
+
+  if (tab === 'vrp') {
+    let html = `<h2 class="text-2xl font-bold text-darkGray mb-6">Resultados</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow-lg p-5"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-gray-500 uppercase">Estado</span><span>📦</span></div><div class="text-xl font-bold ${data.status==='optimal'?'text-green-600':data.status==='infeasible'?'text-red-600':'text-yellow-600'}">${data.status==='optimal'?'Óptimo':data.status==='infeasible'?'Infeasible':'Factible'}</div></div>
+      <div class="bg-white rounded-xl shadow-lg p-5"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-gray-500 uppercase">Distancia Total</span><span>📍</span></div><div class="text-xl font-bold text-yellow">${data.objective_km!=null?data.objective_km+' km':'—'}</div></div>
+      <div class="bg-white rounded-xl shadow-lg p-5"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-gray-500 uppercase">Vehículos</span><span>🚛</span></div><div class="text-xl font-bold text-yellow">${data.vehicles_used?.length||0}</div></div>
+      <div class="bg-white rounded-xl shadow-lg p-5"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-gray-500 uppercase">Tiempo Solver</span><span>⏱</span></div><div class="text-xl font-bold text-yellow">${data.solver_time!=null?data.solver_time+' s':'—'}</div></div>
+    </div>`;
+
+    if (data.detail) {
+      html += `<div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-2 mb-6"><span class="text-red-500">⚠</span><p class="text-sm text-red-700">${data.detail}</p></div>`;
+    }
+
+    if (data.routes && Object.keys(data.routes).length) {
+      html += `<h3 class="text-xl font-bold text-darkGray mb-4">Rutas de vehículos</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+      for (const [vid, route] of Object.entries(data.routes)) {
+        const isTruck = vid.includes('TRUCK');
+        const occ = data.occupancy?.[vid];
+        html += `<div class="bg-white rounded-xl shadow-lg p-5 card-hover">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2"><span>${isTruck?'🚛':'📦'}</span><span class="font-bold text-darkGray">${vid}</span></div>
+            <span class="px-2 py-0.5 bg-yellow/20 text-yellow-700 font-semibold rounded-full text-xs">${isTruck?'TRUCK':'VAN'}</span>
+          </div>
+          ${occ!=null?`<div class="mb-3"><div class="flex justify-between mb-1"><span class="text-xs text-gray-500">Ocupación</span><span class="text-xs font-bold text-yellow">${(occ*100).toFixed(1)}%</span></div><div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-yellow rounded-full h-2" style="width:${Math.min(occ*100,100)}%"></div></div></div>`:''}
+          <div><span class="text-xs text-gray-500 mb-1 block">Paradas (${route.length})</span><div class="flex flex-wrap gap-1">${route.map(s=>`<span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">${s}</span>`).join('')}</div></div>
+        </div>`;
+      }
+      html += '</div>';
+    }
+    el.innerHTML = html;
+
+  } else {
+    // Transfer
+    const { vuelos, resumen } = data;
+    let html = `<h2 class="text-2xl font-bold text-darkGray mb-6">Resultados</h2>`;
+    if (resumen) {
+      html += `<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-lg p-5"><span class="text-xs font-semibold text-gray-500 uppercase block mb-1">Fuel óptimo</span><div class="text-xl font-bold text-green-600">${resumen.fuel_total_mejor_kg?.toLocaleString()} kg</div></div>
+        <div class="bg-white rounded-xl shadow-lg p-5"><span class="text-xs font-semibold text-gray-500 uppercase block mb-1">Fuel peor</span><div class="text-xl font-bold text-red-600">${resumen.fuel_total_peor_kg?.toLocaleString()} kg</div></div>
+        <div class="bg-white rounded-xl shadow-lg p-5"><span class="text-xs font-semibold text-gray-500 uppercase block mb-1">Ahorro</span><div class="text-xl font-bold text-yellow">${resumen.ahorro_total_kg?.toLocaleString()} kg</div></div>
+        <div class="bg-white rounded-xl shadow-lg p-5"><span class="text-xs font-semibold text-gray-500 uppercase block mb-1">% Ahorro</span><div class="text-xl font-bold text-yellow">${resumen.ahorro_total_pct}%</div></div>
+      </div>`;
+    }
+    if (vuelos && vuelos.length) {
+      html += `<h3 class="text-xl font-bold text-darkGray mb-4">Detalle por vuelo</h3><div class="space-y-4">`;
+      for (const v of vuelos) {
+        html += `<div class="bg-white rounded-xl shadow-lg p-5">
+          <div class="flex items-center gap-3 mb-4">
+            <span>✈️</span>
+            <h4 class="text-lg font-bold text-darkGray">${v.vuelo_id}: ${AIRPORTS_INFO[v.origen]||v.origen} → ${AIRPORTS_INFO[v.destino]||v.destino}</h4>
+            <span class="text-sm text-gray-500">${v.dist_km} km</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          ${(v.por_franja||[]).map(f => `
+            <div class="border-2 rounded-lg p-4 ${f.franja===v.mejor_franja?'border-green-500 bg-green-50':'border-gray-200'}">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-bold text-darkGray capitalize">${f.franja}</span>
+                ${f.franja===v.mejor_franja?'<span class="px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full">ÓPTIMA</span>':''}
+              </div>
+              <div class="text-xl font-bold text-yellow mb-1">${f.fuel_kg?.toLocaleString()} kg</div>
+              <div class="text-sm font-semibold ${f.pct_extra_total>0?'text-red-500':'text-green-600'}">${f.pct_extra_total>0?'+'+f.pct_extra_total+'%':'0%'}</div>
+              <ul class="mt-2 space-y-0.5">${(f.motivos||[]).map(m=>`<li class="text-xs text-gray-500">${m}</li>`).join('')}</ul>
+            </div>
+          `).join('')}
+          </div>
+          <div class="mt-3 flex items-center gap-4 text-sm text-gray-600">
+            <span>Ahorro: <strong class="text-yellow">${v.ahorro_kg} kg</strong></span>
+            <span>Fuel base: ${v.fuel_base_kg?.toLocaleString()} kg</span>
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  DEMANDA PAGE
+// ══════════════════════════════════════════════════════════════════════
+function renderDemanda(el) {
+  const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const DIAS_SHORT = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  let historial = ['','','','','','',''];
+  let daySemana = 0;
+  let useGPS = false;
+  let gpsPoint = null;
+  let loading = false;
+  let result = null;
+  let map = null;
+  let marker = null;
+
+  function render() {
+    el.innerHTML = `
+    <div class="min-h-screen bg-gray-50 pt-20 md:pt-24 page-fade-in">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div class="mb-6">
+          <div class="flex flex-wrap items-center gap-3 mb-3">
+            <h1 class="text-3xl md:text-4xl font-bold text-darkGray">Predicción de Demanda</h1>
+            <span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">LightGBM · MAE 1.75 · Hangzhou · H3</span>
+          </div>
+          <p class="text-lg text-gray-600">Last Mile Intelligence — Predice pedidos para una zona H3 a partir de datos históricos</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="space-y-6">
+            <!-- Historial -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-darkGray">Historial de pedidos</h2>
+                <div class="flex gap-2">
+                  <button id="dem-remove-day" class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:border-red-300 hover:text-red-500 ${historial.length<=7?'opacity-40 cursor-not-allowed':''}">- Día</button>
+                  <button id="dem-add-day" class="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500 hover:border-green-300 hover:text-green-500">+ Día</button>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500 mb-4">Introduce los pedidos de los últimos ${historial.length} días (mínimo 7). El último valor es el día más reciente.</p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                ${historial.map((v,i) => `
+                  <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">Día -${historial.length-i}</label>
+                    <input type="number" min="0" value="${v}" placeholder="0" data-hist-idx="${i}" class="dem-hist-input w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-darkGray bg-white"/>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Day selector -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+              <h2 class="text-xl font-bold text-darkGray mb-4">Día a predecir</h2>
+              <div class="grid grid-cols-7 gap-2">
+                ${DIAS.map((d,i) => `<button data-day="${i}" class="dem-day-btn py-2 rounded-lg text-xs font-semibold transition-all ${daySemana===i?'bg-yellow text-darkGray shadow-md':'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${DIAS_SHORT[i]}</button>`).join('')}
+              </div>
+              <p class="text-sm text-gray-500 mt-3">Seleccionado: <strong>${DIAS[daySemana]}</strong></p>
+            </div>
+
+            <!-- GPS toggle -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+              <label class="flex items-center gap-2 cursor-pointer select-none mb-3">
+                <input type="checkbox" id="dem-use-gps" ${useGPS?'checked':''} class="w-5 h-5 rounded border-gray-300 accent-yellow"/>
+                <span class="font-medium text-darkGray">Predecir por posición GPS (mapa de Hangzhou)</span>
+              </label>
+              <p class="text-sm text-gray-500">${useGPS?'Haz clic en el mapa para seleccionar una posición. Se resolverá la celda H3 automáticamente.':'Solo con historial y día de la semana (predicción general).'}</p>
+              ${useGPS && gpsPoint ? `<p class="text-sm text-purple-600 mt-2 font-medium">📍 ${gpsPoint.lat.toFixed(4)}, ${gpsPoint.lng.toFixed(4)}</p>` : ''}
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3">
+              <button id="dem-load-example" class="py-3 px-4 rounded-xl border border-gray-300 hover:border-yellow bg-white font-medium transition-all">Cargar ejemplo</button>
+              <button id="dem-predict-btn" class="flex-1 bg-yellow hover:bg-yellow/90 text-darkGray font-semibold py-3 text-base rounded-xl transition-all">
+                ${loading?'<span class="spinner inline-block w-4 h-4 border-2 border-darkGray/30 border-t-darkGray rounded-full mr-2"></span>Prediciendo...':'Predecir'}
+              </button>
+              <button id="dem-reset-btn" class="py-3 px-4 rounded-xl border border-gray-300 hover:border-yellow bg-white text-gray-500 transition-all">↻</button>
+            </div>
+          </div>
+
+          <div class="space-y-6">
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div class="px-5 py-3 border-b border-gray-100">
+                <h3 class="font-semibold text-darkGray text-sm">${useGPS?'Haz clic para seleccionar posición':'Mapa de Hangzhou (modo GPS desactivado)'}</h3>
+              </div>
+              <div id="dem-map" style="height:400px;" class="${!useGPS?'opacity-50 pointer-events-none':''}"></div>
+            </div>
+
+            ${result ? `
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+              <div class="flex items-center gap-2 mb-4">
+                <span class="text-purple-600 text-xl">📈</span>
+                <h2 class="text-xl font-bold text-darkGray">Resultado de predicción</h2>
+              </div>
+              <div class="space-y-4">
+                <div class="border-b border-gray-100 pb-3"><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Pedidos esperados</span><span class="text-4xl font-bold text-yellow">${result.pedidos_esperados}</span></div>
+                <div class="border-b border-gray-100 pb-3"><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Día</span><span class="text-lg font-semibold text-darkGray">${result.dia}</span></div>
+                ${result.h3_cell?`<div class="border-b border-gray-100 pb-3"><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Celda H3 (res. 8)</span><span class="text-sm font-mono font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded">${result.h3_cell}</span></div>`:''}
+                ${result.lat!=null?`<div><span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Posición</span><span class="text-sm text-darkGray">${result.lat?.toFixed(4)}, ${result.lng?.toFixed(4)}</span></div>`:''}
+              </div>
+            </div>` : ''}
+
+            <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+              <h3 class="font-semibold text-darkGray mb-1 text-sm">Modelo LightGBM</h3>
+              <p class="text-xs text-gray-600 leading-relaxed">Entrenado sobre datos de pedidos de Hangzhou con celdas H3 (resolución 8, ~460 m²). Features: lag_1, lag_2, lag_3, lag_7, average_wk, day_of_wk. MAE de validación: 1.75 pedidos.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    // Init map
+    map = L.map('dem-map').setView([30.2741, 120.1551], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map);
+    window._currentMaps = [map];
+
+    if (gpsPoint) {
+      const purpleIcon = L.icon({ iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png', shadowUrl:'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41] });
+      marker = L.marker([gpsPoint.lat, gpsPoint.lng], { icon: purpleIcon }).addTo(map).bindPopup(`${gpsPoint.lat.toFixed(4)}, ${gpsPoint.lng.toFixed(4)}`);
+    }
+
+    if (useGPS) {
+      map.on('click', (e) => {
+        gpsPoint = { lat: e.latlng.lat, lng: e.latlng.lng };
+        result = null;
+        render();
+      });
+    }
+
+    // Bind events
+    document.querySelectorAll('.dem-hist-input').forEach(inp => {
+      inp.addEventListener('input', (e) => { historial[parseInt(e.target.dataset.histIdx)] = e.target.value; });
+    });
+    document.querySelectorAll('.dem-day-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => { daySemana = parseInt(e.target.dataset.day); render(); });
+    });
+    document.getElementById('dem-use-gps').addEventListener('change', (e) => { useGPS = e.target.checked; gpsPoint = null; result = null; render(); });
+    document.getElementById('dem-add-day').addEventListener('click', () => { historial.push(''); render(); });
+    document.getElementById('dem-remove-day').addEventListener('click', () => { if(historial.length>7) { historial.pop(); render(); } });
+    document.getElementById('dem-load-example').addEventListener('click', () => {
+      historial = ['12','8','15','10','14','9','11'];
+      daySemana = 0;
+      showToast('Ejemplo cargado', 'Datos de ejemplo listos para predecir.');
+      render();
+    });
+    document.getElementById('dem-reset-btn').addEventListener('click', () => {
+      historial = ['','','','','','','']; daySemana = 0; gpsPoint = null; result = null; render();
+    });
+
+    document.getElementById('dem-predict-btn').addEventListener('click', async () => {
+      const nums = historial.map(v => parseInt(v));
+      if (nums.some(v => isNaN(v) || v < 0)) { showToast('Historial inválido', 'Todos los valores deben ser números enteros >= 0.', 'error'); return; }
+      if (useGPS && !gpsPoint) { showToast('Punto GPS requerido', 'Haz clic en el mapa de Hangzhou para seleccionar un punto.', 'error'); return; }
+
+      loading = true; render();
+      try {
+        let endpoint, body;
+        if (useGPS && gpsPoint) {
+          endpoint = API.ML_PREDICT_GPS;
+          body = { historial: nums, day_semana: daySemana, lat: gpsPoint.lat, lng: gpsPoint.lng };
+        } else {
+          endpoint = API.ML_PREDECIR_ZONA;
+          body = { historial: nums, day_semana: daySemana };
+        }
+        const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.detail || `Error ${res.status}`); }
+        result = await res.json();
+        loading = false;
+        render();
+      } catch (err) {
+        loading = false; render();
+        showToast('Error', err.message, 'error');
+      }
+    });
+  }
+  render();
+}
+</script>
+</body>
+</html>
