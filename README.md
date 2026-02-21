@@ -91,6 +91,25 @@ Instancias disponibles en [9th DIMAC Challenge](http://www.diag.uniroma1.it/chal
 
 ### Servicio 2
 
+**Datos necesarios para el funcionamiento del solver**
+-Lista de depositos: tan solo se necesita el Id del deposito. (D1, D2, D3)
+
+-Flota de cada deposito: "VAN": numero de furgonetas, "TRUCK": numero de camiones.
+
+-Lista de clientes: con su Id, nS: paquetes pequeños, nM: paquetes medianos, nL: paquetes grandes.
+
+-Matriz de distancias:
+    Distancias depositos a deposito: ("D1", "D2"): X
+    Distancia entre deposito a cliente: ("C1", "D1"): X
+    Distancias cliante a cliente: ("C1", "C2"): X
+
+**Funcionamiento del solver**
+El empresario introduce los siguientes datos mediante un archivo: lista de depositos, flota de cada deposito y lista de clientes. Inclyendo en los datos las coordenadas de los clientes y de los depositos.
+
+Despues internamente se calculan las distancias necesarias para construir la matriz de distancias (mediante build_problem), que lee el JSON del usuario, calcula la distancia Haversine entre todos los pares de nodos, multiplica por un factor para aproximar la distancia real por carretera y devuelve la matriz de distancias.
+
+Posteriormente se le pasarian todos los datos al solver para aplicarlo a nuestro modelo de programacion lineal.
+
 ### Servicio 3
 
 **Pipeline (Laboratorio):**
