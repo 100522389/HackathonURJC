@@ -4,7 +4,7 @@ from .routing import search, pl, ml
 
 
 backend = FastAPI(
-    title="sostenibility Optimization API",
+    title="Sostenibility Optimization API",
     description="API para optimización logística: routing, programación lineal y predicción de demanda por zonas densas",
     version="1.0.1",
 )
@@ -18,9 +18,9 @@ backend.add_middleware(
 )
 
 # Incluir routers
-backend.include_router(search.router1, prefix="/search", tags=["Routing - A* Bidirectional"])
-backend.include_router(pl.router2, prefix="/pl", tags=["Programación Lineal - Multi-Depot VRP"])
-backend.include_router(ml.router3, prefix="/ml", tags=["Machine Learning - Predicción de Demanda"])
+backend.include_router(search.router1, prefix="/search", tags=["Routing de alta escala - A* Bidirectional"])
+backend.include_router(pl.router2, prefix="/pl", tags=["Optimización mediante PL - Multi-Depot VRP"])
+backend.include_router(ml.router3, prefix="/ml", tags=["Predicción de pedidos por zona mediante ML - LightGBM en series temporales"])
 
 
 @backend.on_event("startup")
