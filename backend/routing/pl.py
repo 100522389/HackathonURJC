@@ -611,7 +611,7 @@ def _solve_flights(data: Dict[str, Any]) -> Dict[str, Any]:
 # ── Endpoint – Transfer ──
 
 @router2.post("/transfer", response_model=TransferResponse,
-               summary="Optimizar vuelos – Minimizar combustible por franja horaria")
+               summary="Optimizar transporte entre sucursales Aire/Mar – Minimizar combustible por franja horaria")
 def optimize_transfer(req: TransferRequest) -> TransferResponse:
     """
     Minimiza el consumo de combustible de una flota de aviones eligiendo

@@ -99,7 +99,7 @@ def search_path(source_lat: float, source_lon: float, target_lat: float, target_
             cmd,
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=300,  # 5 minutos de timeout para búsquedas complejas
             cwd=search_local_dir,
         )
     except ss.TimeoutExpired:
