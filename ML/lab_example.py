@@ -1,14 +1,14 @@
 '''
 
 # Cargar una ciudad LaDe-D
-df = pd.read_parquet("hf://datasets/Cainiao-AI/LaDe-D/" + splits["delivery_cq"])
+df = pd.read_parquet("hf://datasets/Cainiao-AI/LaDe-D/" + splits["delivery_hz"]) Hanzhou
 
 print("Dataset cargado:", df.shape)
 
 df = df[[
     "delivery_gps_lat",
     "delivery_gps_lng",
-    "accept_time"
+    "accept_time" accept_time
 ]].dropna()
 
 df.rename(columns={
