@@ -134,4 +134,31 @@ Posteriormente se le pasarian todos los datos al solver para aplicarlo a nuestro
 
 **Funcionalidad:**
 
-    El modelo aprende un patrón temporal universal: "si ayer hubo X pedidos, mañana habrá Y". La zona queda implícita en el historial que se le pasa. (Modelo: Hanzhou)
+    El modelo aprende un patrón temporal universal: "si ayer hubo X pedidos, mañana habrá Y". La zona queda implícita en el historial que se le pasa. (Modelo: Sanghai)
+
+
+### API
+
+**main.py**
+
+  -Creación de fastapi.
+  -Añadir CORs --> IMPORTANTE cambiarlos cuando tengamos el dominio.
+  -Mensaje startup y shotdown.
+  -Inclusión de routers para los 3 servicios.
+
+**routing/search**
+
+  -Router para el servicio de búsqueda: incluye todas las funciones que se usan y los BaseModel de Pydantic
+  -QUEDA AÑADIR --> al introducir un nombre de POIs.json, se asignan las coordenadas automáticamente (o saca el nodo).
+
+**routing/optimizacion**
+
+  -Router para el servicio de programación lineal
+  -------
+  -------
+
+
+**routing/ml**
+
+  -Router para el servicio de ML basado en historial de pedidos y posición GPS.
+  -POR AÑADIR --> tendrá 2 funciones, una para la predicción con historial y otra para la predicción basada en GPS.
